@@ -538,7 +538,22 @@
   <!-- Hidden Print Area -->
   <div id="print-report-area"></div>
 
-  <!-- Application JavaScript -->
-  <script src="app.js"></script>
+  <!-- Force clear old service worker caches -->
+  <script>
+    // Unregister ALL old service workers and clear ALL caches to get fresh code
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        registrations.forEach(function(reg) { reg.unregister(); });
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        names.forEach(function(name) { caches.delete(name); });
+      });
+    }
+  </script>
+
+  <!-- Application JavaScript (cache-busted) -->
+  <script src="app.js?v=4"></script>
 </body>
 </html>

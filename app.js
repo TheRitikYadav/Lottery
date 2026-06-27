@@ -1676,7 +1676,7 @@
     o.addEventListener('click', (e) => { if (e.target === o) o.classList.remove('open'); })
   );
 
-  // Register service worker
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Service worker disabled temporarily to fix caching issues
+  // if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 })();
