@@ -1,0 +1,19 @@
+{
+  "name": "TX Scratch Counter",
+  "short_name": "TX Scratch",
+  "description": "Texas Lottery scratch-off ticket counter and inventory manager for retailers",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0b12",
+  "theme_color": "#0a0b12",
+  "orientation": "any",
+  "categories": ["business", "utilities"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0b12'/><text x='50' y='65' text-anchor='middle' font-size='50'>🎰</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

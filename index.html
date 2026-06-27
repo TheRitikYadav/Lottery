@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TX Scratch Counter — Lottery Ticket Tracker</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Texas Lottery scratch-off ticket counter and inventory management app for retailers. Track sales by scanning remaining tickets at end of shift.">
+  <meta name="theme-color" content="#0a0b12">
+
+  <!-- PWA & Mobile -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs" id="nav-tabs">
+    <button class="nav-tab active" data-view="dashboard">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-tab" data-view="games">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+      Games
+    </button>
+    <button class="nav-tab" data-view="count">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+      Scan &amp; Count
+    </button>
+    <button class="nav-tab" data-view="reports">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Reports
+    </button>
+    <button class="nav-tab" id="settings-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Settings
+    </button>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+
+    <!-- ============ DASHBOARD VIEW ============ -->
+    <div id="view-dashboard" class="view active">
+      <!-- Shift Banner -->
+      <div id="shift-banner" class="shift-banner no-shift">
+        <div class="shift-info">
+          <div class="shift-dot"></div>
+          <span id="shift-status-text">No active shift</span>
+        </div>
+        <button id="shift-toggle-btn" class="btn btn-sm btn-success">Start Shift</button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card gold">
+          <div class="stat-card-label">Active Games</div>
+          <div class="stat-card-value" id="stat-active-games">0</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-card-label">Open Packs</div>
+          <div class="stat-card-value" id="stat-open-packs">0</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-card-label">Tickets Sold Today</div>
+          <div class="stat-card-value" id="stat-tickets-today">0</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-card-label">Revenue Today</div>
+          <div class="stat-card-value" id="stat-revenue-today">$0</div>
+        </div>
+      </div>
+
+      <!-- Game Bins Quick View -->
+      <div class="section-header">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          Ticket Display Bins
+        </h2>
+      </div>
+      <div id="bins-grid" class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));">
+        <!-- dynamic bins -->
+      </div>
+
+      <!-- Recent Counts -->
+      <div class="section-header" style="margin-top:20px;">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Recent Shift Counts
+        </h2>
+      </div>
+      <div id="dashboard-recent-counts" class="sale-log">
+        <!-- dynamic -->
+      </div>
+    </div>
+
+    <!-- ============ GAMES VIEW ============ -->
+    <div id="view-games" class="view">
+      <div class="section-header">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          Scratch Games
+        </h2>
+        <button id="add-game-btn" class="btn btn-primary btn-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add Game
+        </button>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="report-controls" id="game-filter-tabs">
+        <button class="report-type-btn active" data-filter="all">All</button>
+        <button class="report-type-btn" data-filter="active">Active</button>
+        <button class="report-type-btn" data-filter="finished">Finished</button>
+      </div>
+
+      <div id="games-list" class="game-list">
+        <!-- dynamic -->
+      </div>
+    </div>
+
+    <!-- ============ SCAN & COUNT VIEW ============ -->
+    <div id="view-count" class="view">
+      <div class="section-header">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+          End-of-Shift Scan &amp; Count
+        </h2>
+      </div>
+
+      <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:16px;">
+        Scan all <strong>remaining</strong> tickets in each pack. Tickets not scanned = tickets sold. The system will detect any missing scans.
+      </p>
+
+      <!-- Counting Session Controls -->
+      <div id="count-session-banner" class="shift-banner no-shift" style="margin-bottom:16px;">
+        <div class="shift-info">
+          <div class="shift-dot"></div>
+          <span id="count-session-text">No counting session active</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="start-count-btn" class="btn btn-sm btn-success">Start Counting</button>
+          <button id="finalize-count-btn" class="btn btn-sm btn-primary" style="display:none;">Finalize &amp; Save</button>
+        </div>
+      </div>
+
+      <!-- Scan Input Area -->
+      <div id="scan-input-area" class="card" style="display:none;">
+        <!-- Mode Toggle -->
+        <div class="sell-mode-toggle" style="margin-bottom:12px;">
+          <button class="mode-btn active" id="mode-scanner-btn" data-mode="scanner">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            Scanner
+          </button>
+          <button class="mode-btn" id="mode-manual-btn" data-mode="manual">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Manual
+          </button>
+        </div>
+
+        <!-- Scanner Camera -->
+        <div id="scanner-mode-area">
+          <div class="scanner-area" id="scanner-viewport">
+            <video id="scanner-video" autoplay playsinline muted></video>
+            <div class="scanner-overlay">
+              <div class="scanner-crosshair">
+                <div class="scanner-line"></div>
+              </div>
+            </div>
+          </div>
+          <div class="scanner-status" id="scanner-status">
+            Click "Start Scanner" to begin
+          </div>
+          <div style="display:flex; gap:8px; justify-content:center; margin-top:10px;">
+            <button id="start-scanner-btn" class="btn btn-primary btn-sm">Start Scanner</button>
+            <button id="stop-scanner-btn" class="btn btn-secondary btn-sm" style="display:none;">Stop Scanner</button>
+          </div>
+        </div>
+
+        <!-- Barcode text input (always visible) -->
+        <div style="margin-top:16px;">
+          <label class="form-label">Enter / Scan Barcode</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="barcode-input" class="form-input mono" placeholder="Scan or type barcode..." autofocus>
+            <button id="barcode-submit-btn" class="btn btn-primary btn-sm">Add</button>
+          </div>
+          <div style="margin-top:6px; font-size:0.72rem; color:var(--text-muted);">
+            Format: Game ID (3-4 digits) + Pack# (7 digits) + Ticket# (3 digits) + validation...
+          </div>
+        </div>
+
+        <!-- Manual Counting Wizard — Step by step, bin by bin -->
+        <div id="manual-entry-area" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-color);">
+          
+          <!-- Bin Selector Strip -->
+          <label class="form-label">Select Bin to Count (or step through serially)</label>
+          <div id="wizard-bin-strip" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; padding:8px 0;">
+            <!-- dynamic bin chips -->
+          </div>
+
+          <!-- Current Bin Card -->
+          <div id="wizard-current-bin" class="card" style="border-color:var(--border-active); position:relative; overflow:hidden;">
+            <!-- Gold top accent bar -->
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-gold),var(--accent-orange));"></div>
+            
+            <!-- Bin Header -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-top:4px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div id="wizard-bin-number" style="background:linear-gradient(135deg,var(--accent-gold),var(--accent-orange)); color:var(--text-dark); font-family:var(--font-mono); font-weight:700; font-size:1.3rem; width:50px; height:50px; border-radius:var(--radius-sm); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;">
+                  <span style="font-size:0.5rem; opacity:0.8;">BIN</span>
+                  <span>—</span>
+                </div>
+                <div>
+                  <h3 id="wizard-game-name" style="margin-bottom:2px;">—</h3>
+                  <div style="display:flex; gap:10px; font-size:0.78rem; color:var(--text-muted);">
+                    <span>Game <strong id="wizard-game-id" style="color:var(--text-secondary); font-family:var(--font-mono);">—</strong></span>
+                    <span id="wizard-game-price" style="color:var(--accent-green); font-weight:600;">—</span>
+                  </div>
+                </div>
+              </div>
+              <span id="wizard-game-status" class="status-badge active">active</span>
+            </div>
+
+            <!-- Pack Info Row -->
+            <div id="wizard-pack-info" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(90px,1fr)); gap:8px; margin-bottom:14px; padding:10px; background:var(--bg-input); border-radius:var(--radius-sm);">
+              <div style="text-align:center;">
+                <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">Pack #</div>
+                <div id="wizard-pack-number" style="font-family:var(--font-mono); font-weight:600; color:var(--accent-blue); font-size:0.95rem;">—</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">Total</div>
+                <div id="wizard-pack-total" style="font-family:var(--font-mono); font-weight:600; font-size:0.95rem;">—</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">Prev. Sold</div>
+                <div id="wizard-prev-sold" style="font-family:var(--font-mono); font-weight:600; color:var(--accent-orange); font-size:0.95rem;">—</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">Opening</div>
+                <div id="wizard-opening" style="font-family:var(--font-mono); font-weight:600; color:var(--accent-green); font-size:0.95rem;">—</div>
+              </div>
+            </div>
+
+            <!-- No Pack Warning -->
+            <div id="wizard-no-pack" style="display:none; padding:12px; background:rgba(239,68,68,0.08); border-radius:var(--radius-sm); font-size:0.82rem; color:var(--accent-red); text-align:center; margin-bottom:14px;">
+              No open pack for this game. Load a pack first.
+            </div>
+            
+            <!-- Finished Game Banner -->
+            <div id="wizard-finished-banner" style="display:none; padding:12px; background:rgba(107,114,128,0.1); border-radius:var(--radius-sm); font-size:0.85rem; color:var(--text-muted); text-align:center; margin-bottom:14px;">
+              🏁 This game is <strong>finished</strong> — all tickets sold or game discontinued.
+            </div>
+
+            <!-- Remaining Count Input -->
+            <div id="wizard-input-area">
+              <label class="form-label">How many tickets REMAINING in this pack?</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" id="wizard-remaining-input" class="form-input mono" placeholder="e.g. 42" min="0" style="max-width:140px; font-size:1.2rem; text-align:center;">
+                <button id="wizard-save-btn" class="btn btn-success btn-sm" style="padding:10px 18px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  Save
+                </button>
+              </div>
+              <div id="wizard-sold-preview" style="margin-top:6px; font-size:0.78rem; color:var(--text-muted);">
+                <!-- dynamic: "That means X tickets were sold = $XX.XX" -->
+              </div>
+            </div>
+
+            <!-- Navigation -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color);">
+              <button id="wizard-prev-btn" class="btn btn-secondary btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                Previous
+              </button>
+              <span id="wizard-step-indicator" style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono);">1 / 10</span>
+              <button id="wizard-next-btn" class="btn btn-primary btn-sm">
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Wizard Completion Summary -->
+          <div id="wizard-summary" style="margin-top:12px; display:none;">
+            <div class="card" style="border-color:rgba(34,197,94,0.2); background:rgba(34,197,94,0.04);">
+              <h4 style="color:var(--accent-green); margin-bottom:6px;">✓ Manual Count Complete</h4>
+              <p style="font-size:0.82rem; color:var(--text-secondary);" id="wizard-summary-text">All bins counted.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Last Scanned Feedback -->
+        <div id="last-scan-feedback" style="display:none; margin-top:12px; padding:10px 14px; border-radius:var(--radius-sm); font-size:0.85rem; font-weight:500;">
+        </div>
+      </div>
+
+      <!-- Scanned Tickets Summary Per Game -->
+      <div id="count-summary-area" style="display:none; margin-top:16px;">
+        <div class="section-header">
+          <h2>Counting Summary</h2>
+          <span id="total-scanned-badge" style="font-family:var(--font-mono); font-size:0.85rem; color:var(--accent-blue);">0 scanned</span>
+        </div>
+        <div id="count-per-game-list" class="game-list">
+          <!-- dynamic: per-game/pack breakdown -->
+        </div>
+
+        <!-- Missing Tickets Warning -->
+        <div id="missing-tickets-area" style="display:none; margin-top:16px;">
+          <div class="card" style="border-color:rgba(249,115,22,0.3); background:rgba(249,115,22,0.05);">
+            <h3 style="color:var(--accent-orange); margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+              Missing Tickets — Verify These Were Sold
+            </h3>
+            <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:12px;">
+              The following tickets were NOT scanned. If they were truly sold, click "Finalize". If you missed scanning any, go back and scan them.
+            </p>
+            <div id="missing-tickets-list">
+              <!-- dynamic -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ REPORTS VIEW ============ -->
+    <div id="view-reports" class="view">
+      <div class="section-header">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Reports
+        </h2>
+        <button id="print-report-btn" class="btn btn-primary btn-sm no-print">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          Print Report
+        </button>
+      </div>
+
+      <!-- Report Type Selection -->
+      <div class="report-controls" id="report-type-tabs">
+        <button class="report-type-btn active" data-report="shift">Shift Report</button>
+        <button class="report-type-btn" data-report="day">Today's Summary</button>
+        <button class="report-type-btn" data-report="packs">Pack Inventory</button>
+        <button class="report-type-btn" data-report="history">History</button>
+      </div>
+
+      <!-- Report Date Filter -->
+      <div class="form-group" style="max-width:250px; margin-bottom:16px;">
+        <label class="form-label">Report Date</label>
+        <input type="date" id="report-date-picker" class="form-input">
+      </div>
+
+      <!-- Report Output Area -->
+      <div id="report-output" class="report-card">
+        <!-- dynamic report content -->
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+
+  <!-- ============ MODALS ============ -->
+
+  <!-- Add/Edit Game Modal -->
+  <div id="game-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="game-modal-title">Add New Game</h2>
+        <button class="modal-close" id="game-modal-close">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bin / Display Position</label>
+        <input type="number" id="game-bin-input" class="form-input mono" placeholder="e.g. 1, 2, 3..." min="1">
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">Customer says "I want #12" — this is that number</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Game Number (from ticket barcode, 3-4 digits)</label>
+        <input type="text" id="game-id-input" class="form-input mono" placeholder="e.g. 2345" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Game Name</label>
+        <input type="text" id="game-name-input" class="form-input" placeholder="e.g. $500,000 Extreme Cash">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ticket Price ($)</label>
+          <select id="game-price-input" class="form-select">
+            <option value="1">$1</option>
+            <option value="2">$2</option>
+            <option value="3">$3</option>
+            <option value="5" selected>$5</option>
+            <option value="10">$10</option>
+            <option value="20">$20</option>
+            <option value="30">$30</option>
+            <option value="50">$50</option>
+            <option value="100">$100</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tickets per Pack</label>
+          <select id="game-packsize-input" class="form-select">
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50" selected>50</option>
+            <option value="60">60</option>
+            <option value="75">75</option>
+            <option value="100">100</option>
+            <option value="150">150</option>
+            <option value="200">200</option>
+            <option value="250">250</option>
+            <option value="300">300</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="game-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="game-modal-save">Save Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Pack / Reload Modal -->
+  <div id="pack-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="pack-modal-title">Load New Pack</h2>
+        <button class="modal-close" id="pack-modal-close">&times;</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Game</label>
+        <select id="pack-game-select" class="form-select">
+          <option value="">— Select Game —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pack Number (7 digits from barcode)</label>
+        <input type="text" id="pack-number-input" class="form-input mono" placeholder="e.g. 0012345" maxlength="7">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ticket Serial Direction</label>
+        <div class="toggle-group">
+          <button class="toggle-option active" data-direction="asc" id="dir-asc-btn">1 → N (Ascending)</button>
+          <button class="toggle-option" data-direction="desc" id="dir-desc-btn">N → 1 (Descending)</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="pack-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="pack-modal-save">Load Pack</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" id="settings-modal-close">&times;</button>
+      </div>
+      <div class="settings-section">
+        <h3>Store Information</h3>
+        <div class="form-group">
+          <label class="form-label">Store Name</label>
+          <input type="text" id="settings-store-name" class="form-input" placeholder="e.g. Quick Stop #42">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Store Address</label>
+          <input type="text" id="settings-store-address" class="form-input" placeholder="e.g. 123 Main St, Dallas TX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Retailer License #</label>
+          <input type="text" id="settings-license" class="form-input mono" placeholder="e.g. TX-12345">
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Data Management</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="export-data-btn" class="btn btn-secondary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
+            Export Backup
+          </button>
+          <button id="import-data-btn" class="btn btn-secondary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 6l-4-4-4 4M12 3v12"/></svg>
+            Import Backup
+          </button>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display:none;">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="settings-save-btn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="modal-overlay">
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirm</h2>
+        <button class="modal-close" id="confirm-modal-close">&times;</button>
+      </div>
+      <p id="confirm-message" style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:4px;">Are you sure?</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="confirm-cancel-btn">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Detail Modal (shows missing tickets for a pack) -->
+  <div id="ticket-detail-modal" class="modal-overlay">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h2 id="ticket-detail-title">Pack Ticket Details</h2>
+        <button class="modal-close" id="ticket-detail-close">&times;</button>
+      </div>
+      <div id="ticket-detail-body">
+        <!-- dynamic ticket grid -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="ticket-detail-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Print Area -->
+  <div id="print-report-area"></div>
+
+  <!-- Application JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
