@@ -378,7 +378,15 @@
       </div>
       <div class="form-group">
         <label class="form-label">Game Number (from ticket barcode, 3-4 digits)</label>
-        <input type="text" id="game-id-input" class="form-input mono" placeholder="e.g. 2345" maxlength="4">
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="game-id-input" class="form-input mono" placeholder="e.g. 2345" maxlength="4">
+          <button id="game-scan-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;">📷 Scan</button>
+        </div>
+        <div id="game-scanner-area" style="display:none; margin-top:12px;">
+          <div id="game-scanner-reader" style="width:100%; max-width:300px; margin:0 auto; border-radius:var(--radius-md); overflow:hidden;"></div>
+          <div id="game-scanner-status" style="text-align:center; font-size:0.75rem; margin-top:8px; color:var(--text-muted);">Starting camera...</div>
+          <button id="game-scan-cancel-btn" class="btn btn-secondary btn-sm" style="width:100%; margin-top:8px;">Cancel Scan</button>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Game Name</label>
@@ -545,6 +553,6 @@
   </script>
 
   <!-- Application JavaScript (cache-busted) -->
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

@@ -250,6 +250,13 @@
   const gameBinInput    = document.getElementById('game-bin-input');
   const gameFilterTabs  = document.getElementById('game-filter-tabs');
 
+  // Game Modal Scanner elements
+  const gameScanBtn       = document.getElementById('game-scan-btn');
+  const gameScannerArea   = document.getElementById('game-scanner-area');
+  const gameScannerStatus = document.getElementById('game-scanner-status');
+  const gameScanCancelBtn = document.getElementById('game-scan-cancel-btn');
+  let gameHtml5QrCode     = null;
+
   function openGameModal(game = null) {
     editingGameId = game ? game.gameId : null;
     gameModalTitle.textContent = game ? 'Edit Game' : 'Add New Game';
@@ -262,10 +269,61 @@
     gameModal.classList.add('open');
   }
 
-  function closeGameModal() { gameModal.classList.remove('open'); editingGameId = null; }
+  function closeGameModal() { 
+    gameModal.classList.remove('open'); 
+    editingGameId = null; 
+    stopGameScanner();
+  }
   addGameBtn.addEventListener('click', () => openGameModal());
   gameModalClose.addEventListener('click', closeGameModal);
   gameModalCancel.addEventListener('click', closeGameModal);
+
+  async function startGameScanner() {
+    if (gameHtml5QrCode && gameHtml5QrCode.isScanning) return;
+    if (typeof Html5Qrcode === 'undefined') {
+      showToast('Scanner library not loaded', 'error');
+      return;
+    }
+    gameScannerArea.style.display = 'block';
+    gameScanBtn.style.display = 'none';
+    gameScannerStatus.textContent = 'Starting camera...';
+    gameScannerStatus.style.color = '#ffcc00';
+
+    try {
+      gameHtml5QrCode = new Html5Qrcode('game-scanner-reader');
+      await gameHtml5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 100 }, aspectRatio: 1.333 },
+        (decodedText) => {
+          const code = decodedText.replace(/\D/g, '');
+          if (code.length >= 13) {
+            // Texas Lottery barcodes are typically 13 or 14 digits
+            const gid = code.length === 14 ? code.substring(0, 4) : code.substring(0, 3);
+            gameIdInput.value = gid;
+            showToast(`Game #${gid} scanned!`, 'success');
+            stopGameScanner();
+          }
+        },
+        () => {} // ignore scan failures
+      );
+      gameScannerStatus.textContent = 'Point camera at ticket barcode';
+      gameScannerStatus.style.color = '#44ff44';
+    } catch (e) {
+      gameScannerStatus.textContent = 'Camera error or permission denied';
+      gameScannerStatus.style.color = '#ff4444';
+    }
+  }
+
+  function stopGameScanner() {
+    if (gameHtml5QrCode && gameHtml5QrCode.isScanning) {
+      gameHtml5QrCode.stop().then(() => { gameHtml5QrCode.clear(); }).catch(()=>{});
+    }
+    gameScannerArea.style.display = 'none';
+    gameScanBtn.style.display = '';
+  }
+
+  gameScanBtn.addEventListener('click', startGameScanner);
+  gameScanCancelBtn.addEventListener('click', stopGameScanner);
 
   gameModalSave.addEventListener('click', () => {
     const bin   = parseInt(gameBinInput.value, 10) || 0;
