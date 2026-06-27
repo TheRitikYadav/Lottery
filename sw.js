@@ -1,5 +1,5 @@
 // TX Scratch Counter — Service Worker
-const CACHE_NAME = 'txscratch-v2';
+const CACHE_NAME = 'txscratch-v3';
 const ASSETS = [
   './',
   './index.html',
