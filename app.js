@@ -825,7 +825,6 @@
   }
 
   // Scanner DOM elements (declared early so startScanner can access them)
-  const scannerVideo    = document.getElementById('scanner-video');
   const scannerStatus   = document.getElementById('scanner-status');
   const startScannerBtn = document.getElementById('start-scanner-btn');
   const stopScannerBtn  = document.getElementById('stop-scanner-btn');
@@ -1096,8 +1095,9 @@
   }
 
   // ===== CAMERA SCANNER =====
-  // scannerVideo, scannerStatus, startScannerBtn, stopScannerBtn
+  // scannerStatus, startScannerBtn, stopScannerBtn
   // are declared earlier (before refreshCountView) to avoid temporal dead zone
+  let html5QrCode = null;
 
   startScannerBtn.addEventListener('click', startScanner);
   stopScannerBtn.addEventListener('click', stopScanner);
@@ -1107,113 +1107,83 @@
       showToast('Start a counting session first', 'error');
       return;
     }
-    // If stream already active, don't re-request
-    if (scannerStream) return;
+    if (html5QrCode && html5QrCode.isScanning) return;
 
-    scannerStatus.textContent = 'Requesting camera permission...';
+    scannerStatus.textContent = 'Starting camera...';
     scannerStatus.style.color = '#ffcc00';
 
-    // Check if getUserMedia is available at all
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-      const msg = 'Camera not available. This app requires HTTPS to access the camera. Please make sure you are visiting via https://';
-      scannerStatus.textContent = msg;
+    // Check if library loaded
+    if (typeof Html5Qrcode === 'undefined') {
+      scannerStatus.textContent = '❌ Scanner library failed to load. Check internet connection.';
       scannerStatus.style.color = '#ff4444';
-      alert(msg);
       return;
     }
 
-    // Check permission state first (if Permissions API available)
     try {
-      if (navigator.permissions && navigator.permissions.query) {
-        const permStatus = await navigator.permissions.query({ name: 'camera' });
-        if (permStatus.state === 'denied') {
-          const msg = 'Camera permission is BLOCKED. Go to your browser settings and allow camera access for this site, then reload.';
-          scannerStatus.textContent = msg;
-          scannerStatus.style.color = '#ff4444';
-          alert(msg);
-          return;
+      html5QrCode = new Html5Qrcode('scanner-reader');
+
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 100 },
+        aspectRatio: 1.333,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODABAR,
+        ]
+      };
+
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        config,
+        (decodedText) => {
+          // Success callback
+          processBarcode(decodedText);
+        },
+        () => {
+          // Error callback (scan attempt didn't find barcode - ignore)
         }
-      }
-    } catch (permErr) {
-      // Permissions API not supported on this browser, continue anyway
-    }
-
-    // Request camera access
-    try {
-      let stream = null;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-      } catch (envErr) {
-        // Fallback: try any available camera
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      }
-
-      scannerStream = stream;
-      scannerVideo.srcObject = stream;
-
-      // Wait for video to be ready
-      await new Promise((resolve, reject) => {
-        scannerVideo.onloadedmetadata = resolve;
-        scannerVideo.onerror = reject;
-        setTimeout(() => reject(new Error('Video load timed out')), 5000);
-      });
-
-      await scannerVideo.play();
+      );
 
       scannerStatus.textContent = '✅ Camera active — point at barcode';
       scannerStatus.style.color = '#44ff44';
       startScannerBtn.style.display = 'none';
       stopScannerBtn.style.display = '';
+      scannerStream = true; // flag for other code that checks scannerStream
 
-      if ('BarcodeDetector' in window) {
-        const detector = new BarcodeDetector({ formats: ['itf', 'code_128', 'code_39', 'ean_13'] });
-        scannerInterval = setInterval(async () => {
-          try {
-            const barcodes = await detector.detect(scannerVideo);
-            if (barcodes.length > 0) processBarcode(barcodes[0].rawValue);
-          } catch { /* ignore detection errors */ }
-        }, 500);
-      } else {
-        scannerStatus.textContent = '📷 Camera active — auto-detect unavailable. Type barcode below.';
-        scannerStatus.style.color = '#ffcc00';
-      }
     } catch (e) {
-      // Clean up on failure
-      if (scannerStream) {
-        scannerStream.getTracks().forEach(t => t.stop());
-      }
-      scannerStream = null;
-      scannerVideo.srcObject = null;
-
       let errorMsg = 'Unknown camera error';
-      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-        errorMsg = 'Camera permission denied. Please allow camera access when prompted, or go to browser settings to enable it.';
-      } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+      if (e.includes && e.includes('NotAllowedError')) {
+        errorMsg = 'Camera permission denied. Allow camera access in browser settings.';
+      } else if (e.includes && e.includes('NotFoundError')) {
         errorMsg = 'No camera found on this device.';
-      } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
-        errorMsg = 'Camera is being used by another app. Close other apps using the camera and try again.';
-      } else if (e.name === 'OverconstrainedError') {
-        errorMsg = 'Camera does not support the requested settings.';
-      } else if (e.name === 'SecurityError') {
-        errorMsg = 'Camera blocked by security policy. HTTPS is required.';
+      } else if (e.includes && e.includes('NotReadableError')) {
+        errorMsg = 'Camera is being used by another app.';
       } else {
-        errorMsg = 'Camera error: ' + (e.message || e.name || 'Unknown');
+        errorMsg = 'Camera error: ' + (typeof e === 'string' ? e : e.message || 'Unknown');
       }
 
       scannerStatus.textContent = '❌ ' + errorMsg;
       scannerStatus.style.color = '#ff4444';
       startScannerBtn.style.display = '';
       stopScannerBtn.style.display = 'none';
-      alert('Camera Error: ' + errorMsg);
+      scannerStream = null;
     }
   }
 
   function stopScanner() {
-    if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+    if (html5QrCode && html5QrCode.isScanning) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+      }).catch(() => {});
+    }
+    scannerStream = null;
     if (scannerInterval) { clearInterval(scannerInterval); scannerInterval = null; }
-    scannerVideo.srcObject = null;
     scannerStatus.textContent = 'Scanner stopped';
     scannerStatus.style.color = '';
     startScannerBtn.style.display = '';

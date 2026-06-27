@@ -770,60 +770,36 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   height: 14px;
 }
 
-/* Scanner area */
-.scanner-area {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
+/* Scanner reader (html5-qrcode) */
+#scanner-reader {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: #000;
-  aspect-ratio: 4/3;
 }
 
-.scanner-area video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+#scanner-reader video {
+  border-radius: var(--radius-md);
 }
 
-.scanner-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+/* Override html5-qrcode library styles for dark theme */
+#scanner-reader #qr-shaded-region {
+  border-color: var(--accent-gold) !important;
 }
 
-.scanner-crosshair {
-  width: 70%;
-  height: 40%;
-  border: 2px solid var(--accent-gold);
-  border-radius: 8px;
-  position: relative;
-  animation: scanPulse 2s ease-in-out infinite;
+#scanner-reader img[alt="Info icon"] {
+  display: none;
 }
 
-.scanner-line {
-  position: absolute;
-  left: 5%;
-  right: 5%;
-  height: 2px;
-  background: var(--accent-gold);
-  box-shadow: 0 0 10px var(--accent-gold);
-  animation: scanLine 2s linear infinite;
+#scanner-reader button {
+  display: none !important;
 }
 
-@keyframes scanPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-@keyframes scanLine {
-  0% { top: 10%; }
-  100% { top: 85%; }
+#scanner-reader select {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
 }
 
 .scanner-status {

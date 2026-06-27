@@ -19,6 +19,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- Barcode Scanner Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -169,16 +172,9 @@
 
         <!-- Scanner Camera -->
         <div id="scanner-mode-area">
-          <div class="scanner-area" id="scanner-viewport">
-            <video id="scanner-video" autoplay playsinline muted></video>
-            <div class="scanner-overlay">
-              <div class="scanner-crosshair">
-                <div class="scanner-line"></div>
-              </div>
-            </div>
-          </div>
+          <div id="scanner-reader" style="width:100%; max-width:400px; margin:0 auto;"></div>
           <div class="scanner-status" id="scanner-status">
-            Click "Start Scanner" to begin
+            Tap "Start Scanner" to scan barcodes
           </div>
           <div style="display:flex; gap:8px; justify-content:center; margin-top:10px;">
             <button id="start-scanner-btn" class="btn btn-primary btn-sm">Start Scanner</button>
@@ -549,6 +545,6 @@
   </script>
 
   <!-- Application JavaScript (cache-busted) -->
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
