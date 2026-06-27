@@ -474,10 +474,8 @@
   const finalizeCountBtn   = document.getElementById('finalize-count-btn');
   const scanInputArea      = document.getElementById('scan-input-area');
   const countSummaryArea   = document.getElementById('count-summary-area');
-  const totalScannedBadge  = document.getElementById('total-scanned-badge');
+  const countTotalScanned = document.getElementById('total-scanned-badge');
   const countPerGameList   = document.getElementById('count-per-game-list');
-  const missingTicketsArea = document.getElementById('missing-tickets-area');
-  const missingTicketsList = document.getElementById('missing-tickets-list');
   const lastScanFeedback   = document.getElementById('last-scan-feedback');
 
   const modeScannerBtn = document.getElementById('mode-scanner-btn');
@@ -994,62 +992,10 @@
             <button class="btn btn-secondary btn-sm" onclick="window.txApp.showTicketDetail('${e.gameId}','${e.packNumber}')" title="View Details">Details</button>
           </div>
         </div>
-        ${newlySold.length > 0 ? `
-          <div style="margin-top:8px; padding:8px 10px; background:rgba(249,115,22,0.08); border-radius:var(--radius-sm); font-size:0.78rem;">
-            <strong style="color:var(--accent-orange);">⚠ Not scanned (assumed sold):</strong>
-            <span style="font-family:var(--font-mono); color:var(--text-primary);">${newlySold.map(t => padNum(t)).join(', ')}</span>
-          </div>` : ''}
       </div>`;
     });
-
-    // Un-scanned packs reminder
-    const unscannedPacks = activePacks.filter(p => !scannedPackKeys.has(`${p.gameId}__${p.packNumber}`));
-    if (unscannedPacks.length > 0) {
-      html += `<div class="card" style="border-color:rgba(239,68,68,0.2); background:rgba(239,68,68,0.04); margin-top:8px;">
-        <h4 style="color:var(--accent-red); margin-bottom:8px;">⚠ Packs Not Yet Scanned</h4>
-        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:8px;">You haven't scanned any tickets from these packs yet. If no tickets were sold, scan at least one to confirm.</p>
-        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          ${unscannedPacks.map(p => {
-            const g = games.find(g => g.gameId === p.gameId);
-            return `<span class="status-badge new">#${p.gameId} · Pk ${p.packNumber} (${g ? g.gameName : 'Unknown'})</span>`;
-          }).join('')}
-        </div>
-      </div>`;
-    }
 
     countPerGameList.innerHTML = html;
-
-    // Global missing tickets area
-    let allMissing = [];
-    entries.forEach(e => {
-      const pack = packs.find(p => p.gameId === e.gameId && p.packNumber === e.packNumber);
-      if (!pack) return;
-      const scannedArr = [...e.tickets];
-      const allTickets = Array.from({ length: pack.totalTickets }, (_, i) => i + 1);
-      const missing = allTickets.filter(t => !scannedArr.includes(t));
-      const previouslySold = getPackPreviouslySoldTickets(pack);
-      const newMissing = missing.filter(t => !previouslySold.includes(t));
-      if (newMissing.length > 0) {
-        const game = games.find(g => g.gameId === e.gameId);
-        allMissing.push({ gameId: e.gameId, gameName: game ? game.gameName : 'Unknown', packNumber: e.packNumber, tickets: newMissing });
-      }
-    });
-
-    if (allMissing.length > 0) {
-      missingTicketsArea.style.display = '';
-      missingTicketsList.innerHTML = allMissing.map(m =>
-        `<div style="margin-bottom:8px; padding:8px 10px; background:var(--bg-input); border-radius:var(--radius-sm);">
-          <div style="font-size:0.78rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">
-            #${m.gameId} — ${m.gameName} · Pack #${m.packNumber}
-          </div>
-          <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--accent-orange);">
-            Tickets: ${m.tickets.map(t => padNum(t)).join(', ')}
-          </div>
-        </div>`
-      ).join('');
-    } else {
-      missingTicketsArea.style.display = 'none';
-    }
   }
 
   function getPackPreviouslySoldTickets(pack) {
@@ -1112,8 +1058,38 @@
     }
 
     if (!matched) {
-      showScanFeedback('Game not recognized. Register it in Games tab first.', 'error');
-      return;
+      // Auto-add unknown game
+      const gid = code.length === 14 ? code.substring(0, 4) : code.substring(0, 3);
+      const pk = code.substring(gid.length, gid.length + 7);
+      const tk = parseInt(code.substring(gid.length + 7), 10);
+      
+      const priceStr = prompt('New Game Detected (Game #' + gid + ').\\nWhat is the ticket price? (e.g. 5, 10, 20)');
+      if (!priceStr) return; // Cancelled
+      const price = parseFloat(priceStr);
+      
+      const packSizeStr = prompt('What is the total number of tickets in a pack for Game #' + gid + '? (e.g. 50, 75, 100)');
+      if (!packSizeStr) return; // Cancelled
+      const packSize = parseInt(packSizeStr, 10);
+      
+      if (isNaN(price) || isNaN(packSize)) {
+        showScanFeedback('Invalid price or pack size entered', 'error');
+        return;
+      }
+      
+      // Register game
+      const newGame = {
+        gameId: gid, gameName: `Game #${gid}`,
+        price, packSize, binNumber: games.length + 1,
+        status: 'active', dateAdded: new Date().toISOString()
+      };
+      games.push(newGame);
+      save(KEYS.GAMES, games);
+      showToast(`Game #${gid} registered automatically!`, 'success');
+      
+      gameId = gid;
+      packNumber = pk;
+      ticketNumber = tk;
+      matched = true;
     }
 
     // Auto-create pack if needed
