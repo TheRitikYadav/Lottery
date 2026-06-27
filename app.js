@@ -106,6 +106,7 @@
     activeView = name;
     navTabs.forEach(t => t.classList.toggle('active', t.dataset.view === name));
     Object.entries(views).forEach(([k, v]) => v.classList.toggle('active', k === name));
+    if (name !== 'count') stopScanner();
     if (name === 'dashboard') refreshDashboard();
     if (name === 'games') renderGames();
     if (name === 'count') refreshCountView();
@@ -463,11 +464,13 @@
     countMode = 'scanner';
     modeScannerBtn.classList.add('active'); modeManualBtn.classList.remove('active');
     scannerModeArea.style.display = '';     manualEntryArea.style.display = 'none';
+    if (countingActive) startScanner();
   });
   modeManualBtn.addEventListener('click', () => {
     countMode = 'manual';
     modeManualBtn.classList.add('active');  modeScannerBtn.classList.remove('active');
     scannerModeArea.style.display = 'none'; manualEntryArea.style.display = '';
+    stopScanner();
     initWizard();
   });
 
@@ -835,7 +838,10 @@
       finalizeCountBtn.style.display = totalEntries > 0 ? '' : 'none';
       scanInputArea.style.display = '';
       countSummaryArea.style.display = '';
-      if (countMode === 'scanner') barcodeInput.focus();
+      if (countMode === 'scanner') {
+        barcodeInput.focus();
+        startScanner();
+      }
       if (countMode === 'manual') initWizard();
     } else {
       countSessionBanner.classList.add('no-shift');
@@ -1104,8 +1110,12 @@
 
   async function startScanner() {
     if (!countingActive) return showToast('Start a counting session first', 'error');
+    if (scannerStream) return;
     try {
       scannerStatus.textContent = 'Requesting camera...';
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera API not available. HTTPS is required on mobile devices.');
+      }
       scannerStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
       });
