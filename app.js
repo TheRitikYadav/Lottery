@@ -745,9 +745,19 @@
     Object.values(scanGroups).forEach(sg => {
       const pack = packs.find(p => p.gameId === sg.gameId && p.packNumber === sg.packNumber);
       if (!pack) return;
+      const activeTicket = sg.scannedTickets[sg.scannedTickets.length - 1];
       const allTickets = Array.from({ length: pack.totalTickets }, (_, i) => i + 1);
-      const remaining  = sg.scannedTickets.sort((a, b) => a - b);
-      const sold       = allTickets.filter(t => !remaining.includes(t));
+      
+      let remaining = [];
+      let sold = [];
+      if (pack.direction === 'desc') {
+        sold = allTickets.filter(t => t > activeTicket);
+        remaining = allTickets.filter(t => t <= activeTicket);
+      } else {
+        sold = allTickets.filter(t => t < activeTicket);
+        remaining = allTickets.filter(t => t >= activeTicket);
+      }
+      
       packResults.push({
         gameId: sg.gameId, packNumber: sg.packNumber,
         totalTickets: pack.totalTickets, scannedTickets: remaining, soldTickets: sold,
@@ -894,11 +904,19 @@
       const pack = packs.find(p => p.gameId === e.gameId && p.packNumber === e.packNumber);
       if (!game || !pack) return;
 
-      const scannedArr = [...e.tickets].sort((a, b) => a - b);
+      const activeTicket = e.tickets[e.tickets.length - 1];
       const allTickets = Array.from({ length: pack.totalTickets }, (_, i) => i + 1);
-      const missing = allTickets.filter(t => !scannedArr.includes(t));
+      
+      let missing = []; // missing means cumulative sold
+      if (pack.direction === 'desc') {
+        missing = allTickets.filter(t => t > activeTicket);
+      } else {
+        missing = allTickets.filter(t => t < activeTicket);
+      }
+
       const previouslySold = getPackPreviouslySoldTickets(pack);
       const newlySold = missing.filter(t => !previouslySold.includes(t));
+      const scannedArr = [activeTicket]; // Display only the active ticket
 
       html += `<div class="game-item" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
