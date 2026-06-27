@@ -1116,11 +1116,20 @@
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera API not available. HTTPS is required on mobile devices.');
       }
-      scannerStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
+      
+      try {
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+      } catch (err) {
+        // Fallback for devices without a rear/environment camera (e.g., laptops)
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+          video: true
+        });
+      }
+
       scannerVideo.srcObject = scannerStream;
-      scannerVideo.play();
+      await scannerVideo.play();
       scannerStatus.textContent = 'Camera active — point at barcode';
       startScannerBtn.style.display = 'none';
       stopScannerBtn.style.display = '';
@@ -1136,9 +1145,11 @@
       } else {
         scannerStatus.textContent = 'Camera active — auto-detect unavailable. Type barcode below.';
       }
-    } catch {
-      scannerStatus.textContent = 'Camera denied. Enter barcode manually.';
-      showToast('Camera access denied', 'error');
+    } catch (e) {
+      scannerStatus.textContent = 'Camera error: ' + (e.message || 'Access denied');
+      showToast('Camera error: ' + (e.message || 'Access denied'), 'error');
+      startScannerBtn.style.display = '';
+      stopScannerBtn.style.display = 'none';
     }
   }
 
