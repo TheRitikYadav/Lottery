@@ -824,6 +824,12 @@
     generateReport();
   }
 
+  // Scanner DOM elements (declared early so startScanner can access them)
+  const scannerVideo    = document.getElementById('scanner-video');
+  const scannerStatus   = document.getElementById('scanner-status');
+  const startScannerBtn = document.getElementById('start-scanner-btn');
+  const stopScannerBtn  = document.getElementById('stop-scanner-btn');
+
   function refreshCountView() {
     // Restore temp scans if any
     if ((tempScans.length > 0 || Object.keys(wizardCounts).length > 0) && !countingActive) countingActive = true;
@@ -990,19 +996,9 @@
     if (e.key === 'Enter') processBarcode(barcodeInput.value.trim());
   });
 
-  // Manual ticket add
-  manualTicketAddBtn.addEventListener('click', () => {
-    const gameId = manualGameSelect.value;
-    const packNum = manualPackSelect.value;
-    const ticketNum = parseInt(manualTicketInput.value, 10);
-    if (!gameId || !packNum || !ticketNum) return showToast('Fill game, pack, and ticket #', 'error');
-    addScan(gameId, packNum, ticketNum);
-    manualTicketInput.value = '';
-    manualTicketInput.focus();
-  });
-  manualTicketInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') manualTicketAddBtn.click();
-  });
+  // Manual ticket add (elements removed from UI, kept as safe no-op)
+  // manualTicketAddBtn, manualGameSelect, manualPackSelect, manualTicketInput
+  // are no longer in the HTML — this section is disabled.
 
   function processBarcode(raw) {
     if (!raw) return;
@@ -1100,10 +1096,8 @@
   }
 
   // ===== CAMERA SCANNER =====
-  const scannerVideo    = document.getElementById('scanner-video');
-  const scannerStatus   = document.getElementById('scanner-status');
-  const startScannerBtn = document.getElementById('start-scanner-btn');
-  const stopScannerBtn  = document.getElementById('stop-scanner-btn');
+  // scannerVideo, scannerStatus, startScannerBtn, stopScannerBtn
+  // are declared earlier (before refreshCountView) to avoid temporal dead zone
 
   startScannerBtn.addEventListener('click', startScanner);
   stopScannerBtn.addEventListener('click', stopScanner);
